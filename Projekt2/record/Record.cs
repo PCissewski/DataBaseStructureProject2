@@ -2,7 +2,7 @@
 {
     public class Record
     {
-        private string _person;
-        private int _key;
+        public string Person { get; set; }
+        public int Key { get; set; }
     }
 }
