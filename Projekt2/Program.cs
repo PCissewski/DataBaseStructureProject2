@@ -1,4 +1,3 @@
-using System;
 using Projekt2.btree;
 using Projekt2.btreeService;
 using Projekt2.pageService;
@@ -16,7 +15,7 @@ namespace Projekt2
                 Root = rootPage.LoadPage(args, 0)
             };
             
-            bTreeService.PrintTree(bTree);
+            bTreeService.PrintTree(args);
         }
 
     }

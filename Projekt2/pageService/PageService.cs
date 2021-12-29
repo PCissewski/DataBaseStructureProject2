@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
 using Projekt2.page;
 using Projekt2.record;
 
@@ -9,7 +9,7 @@ namespace Projekt2.pageService
     {
         public Page LoadPage(string[] args, int index)
         {
-            var pageData = System.IO.File.ReadAllText(args[index]).Replace("\r\n", "").Split(';');
+            var pageData = File.ReadAllText(args[index]).Replace("\r\n", "").Split(';');
             
             var children = new List<int>();
             var records = new List<Record>();
@@ -34,11 +34,11 @@ namespace Projekt2.pageService
                     continue;
                 }
                 
-                children.Add(int.Parse(data[0]));
+                children.Add(int.Parse(data[2]));
                 records.Add(new Record
                     {
-                        Person = data[2],
-                        Key = int.Parse(data[1])
+                        Person = data[1],
+                        Key = int.Parse(data[0])
                     });
             }
 
