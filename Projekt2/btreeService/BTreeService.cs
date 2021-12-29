@@ -7,9 +7,9 @@ namespace Projekt2.btreeService
 {
     public class BTreeService
     {
-        public void PrintTree(string[] args)
+        public void PrintTree(string root)
         {
-            var pageService = new PageService();
+            var pageService = new PageService(root);
             var indexes = new List<int>{0};
 
             while (indexes.Count > 0)
@@ -20,7 +20,7 @@ namespace Projekt2.btreeService
                     continue;
                 }
                     
-                var page = pageService.LoadPage(args, indexes[0]);
+                var page = pageService.LoadPage(indexes[0]);
                 indexes.RemoveAt(0);
                 
                 indexes.AddRange(page.ChildrenIndexes);
@@ -30,6 +30,12 @@ namespace Projekt2.btreeService
             }
         }
 
+        public void SearchRecord(string root, int key)
+        {
+            var pageService = new PageService(root);
+            var page = pageService.LoadPage(0);
+        }
+        
         private void PrintPage(Page page)
         {
             var number = 0;

@@ -7,9 +7,18 @@ namespace Projekt2.pageService
 {
     public class PageService
     {
-        public Page LoadPage(string[] args, int index)
+        private readonly string rootDirectory;
+
+        public PageService(string rootDirectory)
         {
-            var pageData = File.ReadAllText(args[index]).Replace("\r\n", "").Split(';');
+            this.rootDirectory = rootDirectory;
+        }
+
+        public Page LoadPage(int index)
+        {
+            var final = rootDirectory + "\\page" + index + ".txt";
+
+            var pageData = File.ReadAllText(final).Replace("\r\n", "").Split(';');
             
             var children = new List<int>();
             var records = new List<Record>();
@@ -48,19 +57,7 @@ namespace Projekt2.pageService
                 ParentIndex = parent,
                 Records = records
             };
-            var i = 1;
-            foreach (var child in children)
-            {
-                if (child == -1)
-                {
-                    i++;
-                    continue;
-                }
-                    
-                var pg = LoadPage(args, i);
-                i++;
-            }
-            
+
             return page;
         }
     }
