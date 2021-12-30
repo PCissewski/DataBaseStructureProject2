@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Projekt2.page;
 using Projekt2.pageService;
+using Projekt2.record;
 
 namespace Projekt2.btreeService
 {
@@ -30,10 +33,42 @@ namespace Projekt2.btreeService
             }
         }
 
-        public void SearchRecord(string root, int key)
+        public Record SearchRecord(string root, int key)
         {
             var pageService = new PageService(root);
-            var page = pageService.LoadPage(0);
+            var index = 0;
+            var fileCount = Directory.EnumerateFiles(@"X:\InformatykaSemestr5\SBD\Project2\Projekt2\Projekt2\page", "*.txt", SearchOption.AllDirectories).Count();
+            while (fileCount != 0 && index >= 0)
+            {
+                var page = pageService.LoadPage(index);
+                var begin = 0;
+                var last = page.Records.Count - 1;
+                while (begin <= last)
+                {
+                    var middle = (begin + last) / 2;
+                    if (key == page.Records[middle].Key)
+                    {
+                        Console.WriteLine("Found Record");
+                        var record = page.Records[middle++];
+                        Console.WriteLine(record.ToString());
+                        return record;
+                    }
+                    if (key < page.Records[middle].Key)
+                    {
+                        last = middle - 1;
+                        index = page.ChildrenIndexes[0];
+                    }
+                    else
+                    {
+                        begin = middle + 1;
+                        index = page.ChildrenIndexes[begin];
+                    }
+                }
+
+                fileCount--;
+            }
+            Console.WriteLine("Not Found");
+            return null;
         }
         
         private void PrintPage(Page page)
@@ -49,6 +84,6 @@ namespace Projekt2.btreeService
             }
         }
 
-        // TODO implement searching and inserting
+        // TODO implement inserting
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using Projekt2.btree;
 using Projekt2.btreeService;
 using Projekt2.pageService;
@@ -16,7 +17,7 @@ namespace Projekt2
             };
             
             bTreeService.PrintTree(args[0]);
-            bTreeService.SearchRecord(args[0], 12);
+            bTreeService.SearchRecord(args[0], 420);
         }
 
     }
