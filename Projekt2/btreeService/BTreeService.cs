@@ -10,6 +10,14 @@ namespace Projekt2.btreeService
 {
     public class BTreeService
     {
+        /*
+        Format strony:
+        
+        PointerRodzic##;
+        PointerDziecko##;p_0
+        Klucz#ImieOsoby#PointerDziecko;
+        Klucz#ImieOsoby#PointerDziecko;
+         */
         public void PrintTree(string root)
         {
             var pageService = new PageService(root);
@@ -99,6 +107,9 @@ namespace Projekt2.btreeService
             if (page.RecordsCount + 1 < Page.MaxRecords)
             {
                 // insert record
+
+                var pageData = pageService.GetPageData(currentPageIndex);
+                
                 page.Records.Add(record);
                 Console.WriteLine("Ok");
                 return;

@@ -16,9 +16,7 @@ namespace Projekt2.pageService
 
         public Page LoadPage(int index)
         {
-            var final = rootDirectory + "\\page" + index + ".txt";
-
-            var pageData = File.ReadAllText(final).Replace("\r\n", "").Split(';');
+            var pageData = GetPageData(index);
             
             var children = new List<int>();
             var records = new List<Record>();
@@ -59,6 +57,13 @@ namespace Projekt2.pageService
             };
 
             return page;
+        }
+
+        public string[] GetPageData(int index)
+        {
+            var final = rootDirectory + "\\page" + index + ".txt";
+
+            return File.ReadAllText(final).Replace("\r\n", "").Split(';');
         }
     }
 }
