@@ -2,6 +2,7 @@ using System;
 using Projekt2.btree;
 using Projekt2.btreeService;
 using Projekt2.pageService;
+using Projekt2.record;
 
 namespace Projekt2
 {
@@ -17,7 +18,7 @@ namespace Projekt2
             };
             
             bTreeService.PrintTree(args[0]);
-            bTreeService.SearchRecord(args[0], 420);
+            bTreeService.InsertRecord(new Record{ Key = 69, Person = "Jan Tillack"}, args[0]);
         }
 
     }

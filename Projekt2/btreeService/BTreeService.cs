@@ -84,6 +84,28 @@ namespace Projekt2.btreeService
             }
         }
 
-        // TODO implement inserting
+        public void InsertRecord(Record record, string root)
+        {
+            if (SearchRecord(root, record.Key) != null && SearchRecord(root, record.Key).Key == record.Key)
+            {
+                Console.WriteLine("Already exist");
+                return;
+            }
+
+            var currentPageIndex = 0;
+            var pageService = new PageService(root);
+            var page = pageService.LoadPage(currentPageIndex);
+            
+            if (page.RecordsCount + 1 < Page.MaxRecords)
+            {
+                // insert record
+                page.Records.Add(record);
+                Console.WriteLine("Ok");
+                return;
+            }
+
+            Console.WriteLine("Compensation");
+        }
+        
     }
 }
