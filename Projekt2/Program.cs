@@ -16,9 +16,8 @@ namespace Projekt2
             {
                 Root = rootPage.LoadPage(0)
             };
-            
             bTreeService.PrintTree(args[0]);
-            bTreeService.InsertRecord(new Record{ Key = 69, Person = "Jan Tillack"}, args[0]);
+            bTreeService.InsertRecord(new Record{ Key = 5, Person = "Kacper Wereszko"}, args[0]);
         }
 
     }

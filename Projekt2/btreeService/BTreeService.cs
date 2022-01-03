@@ -41,14 +41,17 @@ namespace Projekt2.btreeService
             }
         }
 
-        public Record SearchRecord(string root, int key)
+        public Tuple<Record, bool, Page> SearchRecord(string root, int key)
         {
             var pageService = new PageService(root);
             var index = 0;
             var fileCount = Directory.EnumerateFiles(@"X:\InformatykaSemestr5\SBD\Project2\Projekt2\Projekt2\page", "*.txt", SearchOption.AllDirectories).Count();
+            var isLeaf = false;
+            var page = new Page();
             while (fileCount != 0 && index >= 0)
             {
-                var page = pageService.LoadPage(index);
+                page = pageService.LoadPage(index);
+                isLeaf = page.ChildrenIndexes.Contains(-1);
                 var begin = 0;
                 var last = page.Records.Count - 1;
                 while (begin <= last)
@@ -59,7 +62,7 @@ namespace Projekt2.btreeService
                         Console.WriteLine("Found Record");
                         var record = page.Records[middle++];
                         Console.WriteLine(record.ToString());
-                        return record;
+                        return Tuple.Create(record, isLeaf, page);
                     }
                     if (key < page.Records[middle].Key)
                     {
@@ -76,7 +79,7 @@ namespace Projekt2.btreeService
                 fileCount--;
             }
             Console.WriteLine("Not Found");
-            return null;
+            return Tuple.Create(new Record(), isLeaf, page);
         }
         
         private void PrintPage(Page page)
@@ -94,7 +97,9 @@ namespace Projekt2.btreeService
 
         public void InsertRecord(Record record, string root)
         {
-            if (SearchRecord(root, record.Key) != null && SearchRecord(root, record.Key).Key == record.Key)
+            var (searchedRecord, isLeaf, page) = SearchRecord(root, record.Key);
+            
+            if (searchedRecord.Key != 0)
             {
                 Console.WriteLine("Already exist");
                 return;
@@ -102,20 +107,39 @@ namespace Projekt2.btreeService
 
             var currentPageIndex = 0;
             var pageService = new PageService(root);
-            var page = pageService.LoadPage(currentPageIndex);
             
-            if (page.RecordsCount + 1 < Page.MaxRecords)
+            /*
+            Format strony:
+        
+            PointerRodzic##;
+            PointerDziecko##;p_0 dummyPointer
+            Klucz#ImieOsoby#PointerDziecko; // 0 means its a root page
+            Klucz#ImieOsoby#PointerDziecko; // -1 means no child
+            */
+            
+            if (page.RecordsCount < Page.MaxRecords)
             {
                 // insert record
-
-                var pageData = pageService.GetPageData(currentPageIndex);
                 
-                page.Records.Add(record);
+                
+                var recordString = "\r\n" + record.Key + "#" + record.Person + "#" + "-1" + ";";
+                
+                var streamWriter = File.AppendText(root + "\\page" + page.PageIndex + ".txt");
+
+                streamWriter.Write(recordString);
+                streamWriter.Flush();
+                streamWriter.Close();
+ 
                 Console.WriteLine("Ok");
                 return;
             }
 
             Console.WriteLine("Compensation");
+        }
+
+        private string FetchChildPointer(string data)
+        {
+            return data.Split('#')[2];
         }
         
     }

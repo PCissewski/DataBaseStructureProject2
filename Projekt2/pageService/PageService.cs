@@ -53,7 +53,8 @@ namespace Projekt2.pageService
             {
                 ChildrenIndexes = children,
                 ParentIndex = parent,
-                Records = records
+                Records = records,
+                PageIndex = index
             };
 
             return page;
@@ -65,5 +66,13 @@ namespace Projekt2.pageService
 
             return File.ReadAllText(final).Replace("\r\n", "").Split(';');
         }
+
+        public string GetPageString(int index)
+        {
+            var final = rootDirectory + "\\page" + index + ".txt";
+
+            return File.ReadAllText(final);
+        }
+        
     }
 }
