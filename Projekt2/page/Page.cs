@@ -12,6 +12,8 @@ namespace Projekt2.page
         public List<int> ChildrenIndexes { get; set; }
         public List<Record> Records { get; set; }
         public int RecordsCount => Records.Count;
+        public string[] PageData { get; set; }
+        public bool isLeaf { get; set; }
     }
     
 }

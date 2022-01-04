@@ -44,7 +44,7 @@ namespace Projekt2.pageService
                 children.Add(int.Parse(data[2]));
                 records.Add(new Record
                     {
-                        Person = data[1],
+                        Person = data[1].TrimEnd('|'),
                         Key = int.Parse(data[0])
                     });
             }
@@ -54,7 +54,9 @@ namespace Projekt2.pageService
                 ChildrenIndexes = children,
                 ParentIndex = parent,
                 Records = records,
-                PageIndex = index
+                PageIndex = index,
+                PageData = pageData,
+                isLeaf = children.Contains(-1)
             };
 
             return page;

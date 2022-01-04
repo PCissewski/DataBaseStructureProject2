@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Projekt2.page;
 using Projekt2.pageService;
 using Projekt2.record;
@@ -18,6 +19,14 @@ namespace Projekt2.btreeService
         Klucz#ImieOsoby#PointerDziecko;
         Klucz#ImieOsoby#PointerDziecko;
          */
+
+        private readonly string _rootDir;
+
+        public BTreeService(string rootDir)
+        {
+            _rootDir = rootDir;
+        }
+
         public void PrintTree(string root)
         {
             var pageService = new PageService(root);
@@ -111,7 +120,7 @@ namespace Projekt2.btreeService
             if (page.RecordsCount < Page.MaxRecords)
             {
                 // insert record
-                var recordString = "\r\n" + record.Key + "#" + record.Person + "#" + "-1" + ";";
+                var recordString = "\r\n" + record.Key + "#" + record.Person + "|#" + "-1" + ";";
                 
                 var streamWriter = File.AppendText(root + "\\page" + page.PageIndex + ".txt");
 
@@ -127,10 +136,8 @@ namespace Projekt2.btreeService
             // First, check if compensation is possible
             var ps = new PageService(root);
             var parentPage = ps.LoadPage(page.ParentIndex);
-            
             // Check whether left exists
             var isLeftSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer - 1); // for right ancestorPointer + 1
-            
             // If exists check whether it is full, if it is compensation with this sibling is impossible
             if (isLeftSibling)
             {
@@ -141,27 +148,158 @@ namespace Projekt2.btreeService
                     var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer) - 1];
                     
                     // Perform compensation with left sibling
-                    Compensation(page, leftSibling, parentPage, ancestorRecord);
+                    Compensation(page, leftSibling, parentPage, ancestorRecord, record, ancestorPointer);
                     Console.WriteLine("Ok");
                     return;
                 }
             }
-            // to samo dla prawego
-            var records = new List<Record>();
+            // Same for right sibling
             
+            // Check whether right exists
+            var isRightSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer + 1);
+            // If exists check whether it is full, if it is compensation with this sibling is impossible
+            if (isRightSibling)
+            {
+                var rightSibling = ps.LoadPage(ancestorPointer + 1);
+                
+                if (rightSibling.RecordsCount < Page.MaxRecords)
+                {
+                    var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer) - 1];
+                    
+                    // Perform compensation with right sibling
+                    Compensation(page, rightSibling, parentPage, ancestorRecord, record, ancestorPointer);
+                    Console.WriteLine("Ok");
+                    return;
+                }
+            }
+
+            Console.WriteLine("Can't Compensate, perform Split");
+            
+            var records = new List<Record>();
         }
 
-        private void Compensation(Page overflownPage, Page sibling, Page parent,Record ancestorRecord)
+        private void Compensation(Page overflownPage, Page sibling, Page parent, Record ancestorRecord, Record record, int ancestorPointer)
         {
             Console.WriteLine("Running Compensation");
+            // Put all records to a single list
+            var records = new List<Record>();
+            foreach (var overflownPageRecord in overflownPage.Records)
+            {
+                records.Add(overflownPageRecord);
+            }
+            overflownPage.Records.Clear();
+
+            foreach (var siblingRecord in sibling.Records)
+            {
+                records.Add(siblingRecord);
+            }
+            sibling.Records.Clear();
             
+            records.Add(ancestorRecord);
+            records.Add(record);
             
+            records = records.OrderBy(r => r.Key).ToList();
+            
+            // Find middle record in sequence and swap with ancestorRecord in parent page
+            var middleRecord = records[records.Count / 2];
+            parent.Records[parent.ChildrenIndexes.IndexOf(ancestorPointer) - 1] = middleRecord;
+            
+            parent.PageData[0] = parent.PageData[0] + ";\r\n";
+            parent.PageData[1] = parent.PageData[1] + ";\r\n";
+            
+            ReplaceRecord(parent, ancestorRecord, middleRecord);
+            
+            // Distribute records to children
+            var counter = 0;
+            var siblingStrings = new List<string> 
+                {sibling.PageData[0]+ ";\r\n", sibling.PageData[1]+ ";\r\n"};
+            while (counter < records.Count / 2)
+            {
+                // put records left from middle record into page
+                sibling.Records.Add(records[counter]);
+                if (sibling.isLeaf)
+                {
+                    sibling.PageData = PutRecordLeaf(siblingStrings, records[counter]);
+                }
+                else
+                {
+                    PutRecordParent(); // TODO napisac to
+                }
+                
+                counter++;
+            }
+
+            var ovStrings = new List<string> 
+                {overflownPage.PageData[0] + ";\r\n", overflownPage.PageData[1] + ";\r\n"};
+            counter++;
+            while (counter < records.Count)
+            {
+                // put records right from middle record into page
+                overflownPage.Records.Add(records[counter]);
+                if (overflownPage.isLeaf)
+                {
+                    overflownPage.PageData = PutRecordLeaf(ovStrings, records[counter]);
+                }
+                else
+                {
+                    PutRecordParent(); // TODO napisac to
+                }
+                counter++;
+            }
+
+            FlushPage(parent);
+            FlushPage(sibling);
+            FlushPage(overflownPage);
         }
 
-        private string FetchChildPointer(string data)
+        private string[] PutRecordLeaf(List<string> pageData, Record record)
         {
-            return data.Split('#')[2];
+            var stringRecord = record.Key + "#" + record.Person + "|#-1;\r\n";
+            pageData.Add(stringRecord);
+            return pageData.ToArray();
+        }
+
+        private void PutRecordParent()
+        {
+            
         }
         
+        private void ReplaceRecord(Page parent, Record oldRecord, Record newRecord)
+        {
+            var toReplace = "";
+            var replaceIndex = 0;
+            var leave = false;
+
+            foreach (var s in parent.PageData)
+            {
+                var split = s.Split("|");
+                foreach (var s1 in split)
+                {
+                    if (s1 == oldRecord.Key + "#" + oldRecord.Person)
+                    {
+                        split[0] = newRecord.Key + "#" + newRecord.Person + "|";
+                        toReplace = split[0] + split[1] + ";";
+                        leave = true;
+                        break;
+                    }
+                }
+
+                if (leave)
+                    break;
+                replaceIndex++;
+            }
+
+            parent.PageData[replaceIndex] = toReplace;
+        }
+
+        private void FlushPage(Page page)
+        {
+            var streamWriter = File.CreateText(_rootDir + "\\page" + page.PageIndex + ".txt");
+            var final = page.PageData.Aggregate("", (current, s) => current + s);
+            
+            streamWriter.Write(final);
+            streamWriter.Flush();
+            streamWriter.Close();
+        }
     }
 }
