@@ -148,7 +148,7 @@ namespace Projekt2.btreeService
                     var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer) - 1];
                     
                     // Perform compensation with left sibling
-                    Compensation(page, leftSibling, parentPage, ancestorRecord, record, ancestorPointer);
+                    Compensation(page, leftSibling, parentPage, ancestorRecord, record, ancestorPointer, -1);
                     Console.WriteLine("Ok");
                     return;
                 }
@@ -164,10 +164,10 @@ namespace Projekt2.btreeService
                 
                 if (rightSibling.RecordsCount < Page.MaxRecords)
                 {
-                    var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer) - 1];
+                    var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer)];
                     
                     // Perform compensation with right sibling
-                    Compensation(page, rightSibling, parentPage, ancestorRecord, record, ancestorPointer);
+                    Compensation(rightSibling, page, parentPage, ancestorRecord, record, ancestorPointer, 0);
                     Console.WriteLine("Ok");
                     return;
                 }
@@ -178,7 +178,7 @@ namespace Projekt2.btreeService
             var records = new List<Record>();
         }
 
-        private void Compensation(Page overflownPage, Page sibling, Page parent, Record ancestorRecord, Record record, int ancestorPointer)
+        private void Compensation(Page overflownPage, Page sibling, Page parent, Record ancestorRecord, Record record, int ancestorPointer, int leftRight)
         {
             Console.WriteLine("Running Compensation");
             // Put all records to a single list
@@ -202,7 +202,7 @@ namespace Projekt2.btreeService
             
             // Find middle record in sequence and swap with ancestorRecord in parent page
             var middleRecord = records[records.Count / 2];
-            parent.Records[parent.ChildrenIndexes.IndexOf(ancestorPointer) - 1] = middleRecord;
+            parent.Records[parent.ChildrenIndexes.IndexOf(ancestorPointer) + leftRight] = middleRecord;
             
             parent.PageData[0] = parent.PageData[0] + ";\r\n";
             parent.PageData[1] = parent.PageData[1] + ";\r\n";
