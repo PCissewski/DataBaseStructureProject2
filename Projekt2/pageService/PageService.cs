@@ -7,11 +7,11 @@ namespace Projekt2.pageService
 {
     public class PageService
     {
-        private readonly string rootDirectory;
+        private readonly string _rootDirectory;
 
         public PageService(string rootDirectory)
         {
-            this.rootDirectory = rootDirectory;
+            _rootDirectory = rootDirectory;
         }
 
         public Page LoadPage(int index)
@@ -60,16 +60,16 @@ namespace Projekt2.pageService
             return page;
         }
 
-        public string[] GetPageData(int index)
+        private string[] GetPageData(int index)
         {
-            var final = rootDirectory + "\\page" + index + ".txt";
+            var final = _rootDirectory + "\\page" + index + ".txt";
 
             return File.ReadAllText(final).Replace("\r\n", "").Split(';');
         }
 
-        public string GetPageString(int index)
+        public string GetPageAsString(int index)
         {
-            var final = rootDirectory + "\\page" + index + ".txt";
+            var final = _rootDirectory + "\\page" + index + ".txt";
 
             return File.ReadAllText(final);
         }

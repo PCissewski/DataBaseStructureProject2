@@ -104,24 +104,10 @@ namespace Projekt2.btreeService
                 Console.WriteLine("Already exist");
                 return;
             }
-
-            var currentPageIndex = 0;
-            var pageService = new PageService(root);
-            
-            /*
-            Format strony:
-        
-            PointerRodzic##;
-            PointerDziecko##;p_0 dummyPointer
-            Klucz#ImieOsoby#PointerDziecko; // 0 means its a root page
-            Klucz#ImieOsoby#PointerDziecko; // -1 means no child
-            */
             
             if (page.RecordsCount < Page.MaxRecords)
             {
                 // insert record
-                
-                
                 var recordString = "\r\n" + record.Key + "#" + record.Person + "#" + "-1" + ";";
                 
                 var streamWriter = File.AppendText(root + "\\page" + page.PageIndex + ".txt");
@@ -133,8 +119,10 @@ namespace Projekt2.btreeService
                 Console.WriteLine("Ok");
                 return;
             }
-
+            
             Console.WriteLine("Compensation");
+            
+            
         }
 
         private string FetchChildPointer(string data)
