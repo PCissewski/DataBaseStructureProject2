@@ -62,17 +62,9 @@ namespace Projekt2.pageService
 
         private string[] GetPageData(int index)
         {
-            var final = _rootDirectory + "\\page" + index + ".txt";
-
-            return File.ReadAllText(final).Replace("\r\n", "").Split(';');
+            return File.ReadAllText(_rootDirectory + "\\page" + index + ".txt")
+                       .Replace("\r\n", "")
+                       .Split(';');
         }
-
-        public string GetPageAsString(int index)
-        {
-            var final = _rootDirectory + "\\page" + index + ".txt";
-
-            return File.ReadAllText(final);
-        }
-        
     }
 }

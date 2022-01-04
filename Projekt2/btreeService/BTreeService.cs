@@ -41,19 +41,22 @@ namespace Projekt2.btreeService
             }
         }
 
-        public Tuple<Record, bool, Page> SearchRecord(string root, int key)
+        public Tuple<Record, bool, Page, int> SearchRecord(string root, int key)
         {
             var pageService = new PageService(root);
             var index = 0;
             var fileCount = Directory.EnumerateFiles(@"X:\InformatykaSemestr5\SBD\Project2\Projekt2\Projekt2\page", "*.txt", SearchOption.AllDirectories).Count();
             var isLeaf = false;
             var page = new Page();
+            var ancestorPointer = -1;
             while (fileCount != 0 && index >= 0)
             {
                 page = pageService.LoadPage(index);
+                ancestorPointer = index;
                 isLeaf = page.ChildrenIndexes.Contains(-1);
                 var begin = 0;
                 var last = page.Records.Count - 1;
+
                 while (begin <= last)
                 {
                     var middle = (begin + last) / 2;
@@ -62,7 +65,7 @@ namespace Projekt2.btreeService
                         Console.WriteLine("Found Record");
                         var record = page.Records[middle++];
                         Console.WriteLine(record.ToString());
-                        return Tuple.Create(record, isLeaf, page);
+                        return Tuple.Create(record, isLeaf, page, ancestorPointer);
                     }
                     if (key < page.Records[middle].Key)
                     {
@@ -79,7 +82,7 @@ namespace Projekt2.btreeService
                 fileCount--;
             }
             Console.WriteLine("Not Found");
-            return Tuple.Create(new Record(), isLeaf, page);
+            return Tuple.Create(new Record(), isLeaf, page, ancestorPointer);
         }
         
         private void PrintPage(Page page)
@@ -97,7 +100,7 @@ namespace Projekt2.btreeService
 
         public void InsertRecord(Record record, string root)
         {
-            var (searchedRecord, isLeaf, page) = SearchRecord(root, record.Key);
+            var (searchedRecord, isLeaf, page, ancestorPointer) = SearchRecord(root, record.Key);
             
             if (searchedRecord.Key != 0)
             {
@@ -120,7 +123,37 @@ namespace Projekt2.btreeService
                 return;
             }
             
-            Console.WriteLine("Compensation");
+            Console.WriteLine("Try Compensation");
+            // First, check if compensation is possible
+            var ps = new PageService(root);
+            var parentPage = ps.LoadPage(page.ParentIndex);
+            
+            // Check whether left exists
+            var isLeftSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer - 1); // for right ancestorPointer + 1
+            
+            // If exists check whether it is full, if it is compensation with this sibling is impossible
+            if (isLeftSibling)
+            {
+                var leftSibling = ps.LoadPage(ancestorPointer - 1);
+                
+                if (leftSibling.RecordsCount < Page.MaxRecords)
+                {
+                    var ancestorRecord = parentPage.Records[parentPage.ChildrenIndexes.IndexOf(ancestorPointer) - 1];
+                    
+                    // Perform compensation with left sibling
+                    Compensation(page, leftSibling, parentPage, ancestorRecord);
+                    Console.WriteLine("Ok");
+                    return;
+                }
+            }
+            // to samo dla prawego
+            var records = new List<Record>();
+            
+        }
+
+        private void Compensation(Page overflownPage, Page sibling, Page parent,Record ancestorRecord)
+        {
+            Console.WriteLine("Running Compensation");
             
             
         }
