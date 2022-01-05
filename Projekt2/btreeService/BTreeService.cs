@@ -93,19 +93,6 @@ namespace Projekt2.btreeService
             Console.WriteLine("Not Found");
             return Tuple.Create(new Record(), isLeaf, page, ancestorPointer);
         }
-        
-        private void PrintPage(Page page)
-        {
-            var number = 0;
-            Console.WriteLine($"p_{number} = {page.ChildrenIndexes[number]}");
-            foreach (var record in page.Records)
-            {
-                Console.WriteLine($"x_{number + 1} = {record.Key}");
-                Console.WriteLine($"a_{number + 1} = {record.Person}");
-                Console.WriteLine($"p_{number + 1} = {page.ChildrenIndexes[number + 1]}");
-                number++;
-            }
-        }
 
         public void InsertRecord(Record record, string root)
         {
@@ -120,14 +107,10 @@ namespace Projekt2.btreeService
             if (page.RecordsCount < Page.MaxRecords)
             {
                 // insert record
-                var recordString = "\r\n" + record.Key + "#" + record.Person + "|#" + "-1" + ";";
+                PutRecord(page, record);
+                FlushPage(page);
                 
-                var streamWriter = File.AppendText(root + "\\page" + page.PageIndex + ".txt");
-
-                streamWriter.Write(recordString);
-                streamWriter.Flush();
-                streamWriter.Close();
- 
+                // TODO naprawic, jak sie dodaje rekord o kluczu mniejszym niz na stronie to on i tak jest na koncu
                 Console.WriteLine("Ok");
                 return;
             }
@@ -247,18 +230,28 @@ namespace Projekt2.btreeService
                 counter++;
             }
 
+            TrimNewLine(sibling);
+            TrimNewLine(overflownPage);
+            
             FlushPage(parent);
             FlushPage(sibling);
             FlushPage(overflownPage);
         }
-
+        
         private string[] PutRecordLeaf(List<string> pageData, Record record)
         {
             var stringRecord = record.Key + "#" + record.Person + "|#-1;\r\n";
             pageData.Add(stringRecord);
             return pageData.ToArray();
         }
-
+        
+        private void TrimNewLine(Page page)
+        {
+            page.PageData[^1] = page.PageData[^1].TrimEnd('\n');
+            page.PageData[^1] = page.PageData[^1].TrimEnd('\r');
+        }
+        
+        
         private void PutRecordParent()
         {
             
@@ -292,6 +285,67 @@ namespace Projekt2.btreeService
             parent.PageData[replaceIndex] = toReplace;
         }
 
+        private void PrintPage(Page page)
+        {
+            var number = 0;
+            Console.WriteLine($"p_{number} = {page.ChildrenIndexes[number]}");
+            foreach (var record in page.Records)
+            {
+                Console.WriteLine($"x_{number + 1} = {record.Key}");
+                Console.WriteLine($"a_{number + 1} = {record.Person}");
+                Console.WriteLine($"p_{number + 1} = {page.ChildrenIndexes[number + 1]}");
+                number++;
+            }
+        }
+
+        private void PutRecord(Page page, Record record)
+        {
+            var children = new List<int>();
+            var records = new List<Record>();
+
+            foreach (var s in page.PageData)
+            {
+                var data = s.Split('#');
+                
+                if (data[0] == "")
+                    break;
+
+                if (int.Parse(data[0]) == 0 && data[1] == "" && data[2] == "")
+                {
+                    continue;
+                }
+
+                if (data[1] == "" && data[2] == "")
+                {
+                    children.Add(int.Parse(data[0]));
+                    continue;
+                }
+                
+                children.Add(int.Parse(data[2]));
+                records.Add(new Record
+                {
+                    Person = data[1].TrimEnd('|'),
+                    Key = int.Parse(data[0])
+                });
+            }
+            records.Add(record);
+            records = records.OrderBy(r=>r.Key).ToList();
+            var header = page.PageData[0] + ";\r\n";
+            var dummyPointer = page.PageData[1] + ";\r\n";
+            var list = page.PageData.ToList();
+            list.Clear();
+            list.Add(header);
+            list.Add(dummyPointer);
+            foreach (var r in records)
+            {
+                list.Add(r.Key + "#" + r.Person + "|#" + "-1" + ";\r\n");    
+            }
+
+            page.PageData = list.ToArray();
+            
+            TrimNewLine(page);
+        }
+        
         private void FlushPage(Page page)
         {
             var streamWriter = File.CreateText(_rootDir + "\\page" + page.PageIndex + ".txt");

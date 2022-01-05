@@ -9,7 +9,7 @@ namespace Projekt2
         {
             var bTreeService = new BTreeService(args[0]);
             bTreeService.PrintTree(args[0]);
-            bTreeService.InsertRecord(new Record{ Key = 5, Person = "Tomasz Piechocki"}, args[0]);
+            bTreeService.InsertRecord(new Record{ Key = 2, Person = "Jan Bach"}, args[0]);
             bTreeService.PrintTree(args[0]);
         }
 
