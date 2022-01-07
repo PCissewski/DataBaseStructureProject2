@@ -109,8 +109,6 @@ namespace Projekt2.btreeService
                 // insert record
                 PutRecord(page, record);
                 FlushPage(page);
-                
-                // TODO naprawic, jak sie dodaje rekord o kluczu mniejszym niz na stronie to on i tak jest na koncu
                 Console.WriteLine("Ok");
                 return;
             }

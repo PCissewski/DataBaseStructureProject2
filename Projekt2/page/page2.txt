@@ -1,5 +1,6 @@
 0##;
 -1##;
-5#Tomasz Piechocki|#-1;
 6#Marek Kubale|#-1;
 7#Wolfgang Amadeus Mozart|#-1;
+8#Jan Cox|#-1;
+9#Hans Kloss|#-1;
