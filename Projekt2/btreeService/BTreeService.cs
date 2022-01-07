@@ -106,7 +106,7 @@ namespace Projekt2.btreeService
             
             if (page.RecordsCount < Page.MaxRecords)
             {
-                // insert record
+                // insert record to a leaf
                 PutRecord(page, record);
                 FlushPage(page);
                 Console.WriteLine("Ok");
@@ -155,8 +155,9 @@ namespace Projekt2.btreeService
             }
 
             Console.WriteLine("Can't Compensate, perform Split");
-            
-            var records = new List<Record>();
+
+            BasicSplit(page, parentPage, record);
+            Console.WriteLine("Ok");
         }
 
         private void Compensation(Page overflownPage, Page sibling, Page parent, Record ancestorRecord, Record record, int ancestorPointer, int leftRight)
@@ -189,45 +190,11 @@ namespace Projekt2.btreeService
             parent.PageData[1] = parent.PageData[1] + ";\r\n";
             
             ReplaceRecord(parent, ancestorRecord, middleRecord);
-            
+            TrimNewLine(parent);
+
             // Distribute records to children
-            var counter = 0;
-            var siblingStrings = new List<string> 
-                {sibling.PageData[0]+ ";\r\n", sibling.PageData[1]+ ";\r\n"};
-            while (counter < records.Count / 2)
-            {
-                // put records left from middle record into page
-                sibling.Records.Add(records[counter]);
-                if (sibling.isLeaf)
-                {
-                    sibling.PageData = PutRecordLeaf(siblingStrings, records[counter]);
-                }
-                else
-                {
-                    PutRecordParent(); // TODO napisac to
-                }
-                
-                counter++;
-            }
-
-            var ovStrings = new List<string> 
-                {overflownPage.PageData[0] + ";\r\n", overflownPage.PageData[1] + ";\r\n"};
-            counter++;
-            while (counter < records.Count)
-            {
-                // put records right from middle record into page
-                overflownPage.Records.Add(records[counter]);
-                if (overflownPage.isLeaf)
-                {
-                    overflownPage.PageData = PutRecordLeaf(ovStrings, records[counter]);
-                }
-                else
-                {
-                    PutRecordParent(); // TODO napisac to
-                }
-                counter++;
-            }
-
+            DistributeRecordsBetweenPages(sibling, overflownPage, records);
+            
             TrimNewLine(sibling);
             TrimNewLine(overflownPage);
             
@@ -235,72 +202,132 @@ namespace Projekt2.btreeService
             FlushPage(sibling);
             FlushPage(overflownPage);
         }
-        
-        private string[] PutRecordLeaf(List<string> pageData, Record record)
-        {
-            var stringRecord = record.Key + "#" + record.Person + "|#-1;\r\n";
-            pageData.Add(stringRecord);
-            return pageData.ToArray();
-        }
-        
-        private void TrimNewLine(Page page)
-        {
-            page.PageData[^1] = page.PageData[^1].TrimEnd('\n');
-            page.PageData[^1] = page.PageData[^1].TrimEnd('\r');
-        }
-        
-        
-        private void PutRecordParent()
-        {
-            
-        }
-        
-        private void ReplaceRecord(Page parent, Record oldRecord, Record newRecord)
-        {
-            var toReplace = "";
-            var replaceIndex = 0;
-            var leave = false;
 
-            foreach (var s in parent.PageData)
+        private void BasicSplit(Page overflownPage, Page parentPage, Record record)
+        {
+            var records = new List<Record>{record};
+            records.AddRange(overflownPage.Records);
+            overflownPage.Records.Clear();
+            records = records.OrderBy(r => r.Key).ToList();
+            
+            var fileCounter = 0;
+            while (File.Exists(_rootDir + "\\page" + fileCounter + ".txt"))
             {
-                var split = s.Split("|");
-                foreach (var s1 in split)
+                fileCounter++;
+            }
+
+            var streamWriter = File.CreateText(_rootDir + "\\page" + fileCounter + ".txt");
+            streamWriter.Write($"{parentPage.PageIndex}##;\r\n");
+            streamWriter.Flush();
+            streamWriter.Close();
+            
+            var newPage = new PageService(_rootDir).LoadPage(fileCounter);
+
+            var middleRecord = records[records.Count / 2];
+            
+            middleRecord.GreaterKeysPointer = newPage.PageIndex;
+            middleRecord.LowerKeysPointer = overflownPage.PageIndex;
+            
+            parentPage.ChildrenIndexes.Add(newPage.PageIndex);
+            PutRecordParent(parentPage, middleRecord);
+
+            DistributeRecordsBetweenPages(overflownPage, newPage, records);
+            
+            TrimNewLine(overflownPage);
+            TrimNewLine(newPage);
+            TrimNewLine(parentPage);
+            
+            FlushPage(parentPage);
+            FlushPage(overflownPage);
+            FlushPage(newPage);
+        }
+
+        private void DistributeRecordsBetweenPages(Page leftPage, Page rightPage, List<Record> records)
+        {
+            var leftPageData = new List<string>();
+            var rightPageData = new List<string>();
+            
+            leftPageData.Add($"{leftPage.ParentIndex}##;\r\n");
+            rightPageData.Add($"{rightPage.ParentIndex}##;\r\n");
+            
+            var middleRecord = records[records.Count / 2];
+            var index = 0;
+
+            var isFirstLeft = true;
+            var isFirstRight = true;
+            while (true)
+            {
+                var recordToPut = records[index];
+                if (recordToPut.Key < middleRecord.Key)
                 {
-                    if (s1 == oldRecord.Key + "#" + oldRecord.Person)
+                    if (isFirstLeft)
                     {
-                        split[0] = newRecord.Key + "#" + newRecord.Person + "|";
-                        toReplace = split[0] + split[1] + ";";
-                        leave = true;
-                        break;
+                        leftPageData.Add($"{recordToPut.LowerKeysPointer}##;\r\n");
+                        AddRecordToPageData(leftPageData, recordToPut);
+                        leftPage.Records.Add(recordToPut);
+                        isFirstLeft = false;
+                        index++;
+                        continue;
                     }
+                    AddRecordToPageData(leftPageData, recordToPut);
+                    leftPage.Records.Add(recordToPut);
+                }
+                else if (recordToPut.Key > middleRecord.Key)
+                {
+                    if (isFirstRight)
+                    {
+                        rightPageData.Add($"{recordToPut.LowerKeysPointer}##;\r\n");
+                        AddRecordToPageData(rightPageData, recordToPut);
+                        rightPage.Records.Add(recordToPut);
+                        isFirstRight = false;
+                        index++;
+                        continue;
+                    }
+                    AddRecordToPageData(rightPageData, recordToPut);
+                    rightPage.Records.Add(recordToPut);
                 }
 
-                if (leave)
+                index++;
+                if (index == records.Count)
                     break;
-                replaceIndex++;
             }
 
-            parent.PageData[replaceIndex] = toReplace;
+            rightPage.PageData = rightPageData.ToArray();
+            leftPage.PageData = leftPageData.ToArray();
         }
 
-        private void PrintPage(Page page)
+        private void AddRecordToPageData(List<string> pageData, Record record)
         {
-            var number = 0;
-            Console.WriteLine($"p_{number} = {page.ChildrenIndexes[number]}");
-            foreach (var record in page.Records)
-            {
-                Console.WriteLine($"x_{number + 1} = {record.Key}");
-                Console.WriteLine($"a_{number + 1} = {record.Person}");
-                Console.WriteLine($"p_{number + 1} = {page.ChildrenIndexes[number + 1]}");
-                number++;
-            }
+            pageData.Add($"{record.Key}#{record.Person}|#{record.GreaterKeysPointer};\r\n");
         }
 
+        private void PutRecordParent(Page page, Record record)
+        {
+            var pageData = page.PageData.ToList();
+            var records = new List<Record>();
+            records.AddRange(page.Records);
+            page.Records.Clear();
+            records.Add(record);
+            records = records.OrderBy(r => r.Key).ToList();
+            var count = 0;
+            
+            pageData.Clear();
+            pageData.Add($"{page.ParentIndex}##;\r\n");
+            pageData.Add($"{records[0].LowerKeysPointer}##;\r\n");
+            foreach (var r in records)
+            {
+                AddRecordToPageData(pageData, r);
+                page.Records.Add(r);
+            }
+
+            page.PageData = pageData.ToArray();
+        }
+        
         private void PutRecord(Page page, Record record)
         {
             var children = new List<int>();
             var records = new List<Record>();
-
+            
             foreach (var s in page.PageData)
             {
                 var data = s.Split('#');
@@ -329,19 +356,91 @@ namespace Projekt2.btreeService
             records.Add(record);
             records = records.OrderBy(r=>r.Key).ToList();
             var header = page.PageData[0] + ";\r\n";
-            var dummyPointer = page.PageData[1] + ";\r\n";
+            var dummyPointer = records[0].GreaterKeysPointer + "##" + ";\r\n";
             var list = page.PageData.ToList();
             list.Clear();
             list.Add(header);
             list.Add(dummyPointer);
             foreach (var r in records)
             {
-                list.Add(r.Key + "#" + r.Person + "|#" + "-1" + ";\r\n");    
+                list.Add(r.Key + "#" + r.Person + "|#" + r.LowerKeysPointer + ";\r\n");    
             }
 
             page.PageData = list.ToArray();
             
             TrimNewLine(page);
+        }
+        
+        private void ReplaceRecord(Page parent, Record oldRecord, Record newRecord)
+        {
+            var toReplace = "";
+            var replaceIndex = 0;
+            var leave = false;
+
+            var greaterNew = newRecord.GreaterKeysPointer;
+            var lowerNew = newRecord.LowerKeysPointer;
+
+            newRecord.GreaterKeysPointer = oldRecord.GreaterKeysPointer;
+            newRecord.LowerKeysPointer = oldRecord.LowerKeysPointer;
+            oldRecord.GreaterKeysPointer = greaterNew;
+            oldRecord.LowerKeysPointer = lowerNew;
+
+            foreach (var s in parent.PageData)
+            {
+                var split = s.Split("|");
+                foreach (var s1 in split)
+                {
+                    if (s1 == oldRecord.Key + "#" + oldRecord.Person)
+                    {
+                        split[0] = newRecord.Key + "#" + newRecord.Person + "|";
+                        toReplace = split[0] + split[1] + ";\r\n";
+                        leave = true;
+                        break;
+                    }
+                }
+
+                if (leave)
+                    break;
+                replaceIndex++;
+            }
+            parent.PageData[replaceIndex] = toReplace;
+            var n = 0;
+            foreach (var s in parent.PageData)
+            {
+                if (!s.Contains(";\r\n"))
+                {
+                    parent.PageData[n] = parent.PageData[n] + ";\r\n";
+                }
+
+                n++;
+            }
+
+            if (parent.PageData[^1] == ";\r\n") parent.PageData[^1] = "";
+        }
+
+        private void PrintPage(Page page)
+        {
+            var number = 0;
+            Console.WriteLine($"p_{number} = {page.ChildrenIndexes[number]}");
+            foreach (var record in page.Records)
+            {
+                Console.WriteLine($"x_{number + 1} = {record.Key}");
+                Console.WriteLine($"a_{number + 1} = {record.Person}");
+                Console.WriteLine($"p_{number + 1} = {page.ChildrenIndexes[number + 1]}");
+                number++;
+            }
+        }
+
+        private void TrimNewLine(Page page)
+        {
+            if (page.PageData[^1] == "")
+            {
+                page.PageData[^2] = page.PageData[^2].TrimEnd('\n');
+                page.PageData[^2] = page.PageData[^2].TrimEnd('\r');
+                return;
+            }
+            page.PageData[^1] = page.PageData[^1].TrimEnd('\n');
+            page.PageData[^1] = page.PageData[^1].TrimEnd('\r');
         }
         
         private void FlushPage(Page page)

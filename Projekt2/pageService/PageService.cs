@@ -21,11 +21,10 @@ namespace Projekt2.pageService
             var children = new List<int>();
             var records = new List<Record>();
             var parent = 0;
-
+            var n = 0;
             foreach (var s in pageData)
             {
                 var data = s.Split('#');
-                
                 if (data[0] == "")
                     break;
 
@@ -44,9 +43,12 @@ namespace Projekt2.pageService
                 children.Add(int.Parse(data[2]));
                 records.Add(new Record
                     {
+                        LowerKeysPointer = children[n],
                         Person = data[1].TrimEnd('|'),
-                        Key = int.Parse(data[0])
+                        Key = int.Parse(data[0]),
+                        GreaterKeysPointer = children[n + 1]
                     });
+                n++;
             }
 
             var page = new Page
