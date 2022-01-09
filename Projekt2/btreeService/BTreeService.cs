@@ -46,6 +46,7 @@ namespace Projekt2.btreeService
                 indexes.AddRange(page.ChildrenIndexes);
 
                 Console.WriteLine($"Parent node: {page.ParentIndex}");
+                if (page.ChildrenIndexes.Count == 0) return;
                 PrintPage(page);
             }
         }
@@ -79,12 +80,12 @@ namespace Projekt2.btreeService
                     if (key < page.Records[middle].Key)
                     {
                         last = middle - 1;
-                        index = page.ChildrenIndexes[0];
+                        index = page.Records[middle].LowerKeysPointer;
                     }
                     else
                     {
                         begin = middle + 1;
-                        index = page.ChildrenIndexes[begin];
+                        index = page.Records[middle].GreaterKeysPointer;
                     }
                 }
 
@@ -117,10 +118,11 @@ namespace Projekt2.btreeService
             // First, check if compensation is possible
             var ps = new PageService(root);
             var parentPage = ps.LoadPage(page.ParentIndex);
+            bool isRoot = page.PageIndex == parentPage.ParentIndex;
             // Check whether left exists
             var isLeftSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer - 1); // for right ancestorPointer + 1
             // If exists check whether it is full, if it is compensation with this sibling is impossible
-            if (isLeftSibling)
+            if (isLeftSibling && !isRoot)
             {
                 var leftSibling = ps.LoadPage(ancestorPointer - 1);
                 
@@ -139,7 +141,7 @@ namespace Projekt2.btreeService
             // Check whether right exists
             var isRightSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer + 1);
             // If exists check whether it is full, if it is compensation with this sibling is impossible
-            if (isRightSibling)
+            if (isRightSibling && !isRoot)
             {
                 var rightSibling = ps.LoadPage(ancestorPointer + 1);
                 
@@ -156,10 +158,81 @@ namespace Projekt2.btreeService
 
             Console.WriteLine("Can't Compensate, perform Split");
 
+            if (page.ParentIndex == page.PageIndex)
+            {
+                RootSplit(page, record);
+                // Create 2 pages
+                // Root jako index pliku zostaje ten sam
+                // tego roota dobrze ustawic
+                // a potem DistributeRecordsBetweenPages(newPage1, newPage2, rekordy)
+                // kontrolowac ChildIndexes !!!!
+                // wrzucic to potem do jakiejs metody RootSplit(page, record)
+                Console.WriteLine("Split Root");
+                return;
+            }
+
             BasicSplit(page, parentPage, record);
             Console.WriteLine("Ok");
         }
 
+        private void RootSplit(Page page, Record record)
+        {
+            var records = new List<Record> {record};
+            records.AddRange(page.Records);
+            records = records.OrderBy(r => r.Key).ToList();
+            
+            // create 2 pages
+            
+            var newPageLeft = CreateNewChildPage(page);
+            
+            var newPageRight = CreateNewChildPage(page);
+            
+            // put middle to parent so in this case to "page"
+            
+            var middleRecord = records[records.Count / 2];
+            
+            middleRecord.GreaterKeysPointer = newPageRight.PageIndex;
+            middleRecord.LowerKeysPointer = newPageLeft.PageIndex;
+
+            page.ChildrenIndexes.Add(newPageLeft.PageIndex);
+            page.ChildrenIndexes.Add(newPageRight.PageIndex);
+            
+            page.Records.Clear();
+            PutRecordParent(page, middleRecord);
+            
+            DistributeRecordsBetweenPages(newPageLeft, newPageRight, records);
+            
+            TrimNewLine(newPageLeft);
+            TrimNewLine(newPageRight);
+            
+            FlushPage(newPageLeft);
+            FlushPage(newPageRight);
+            FlushPage(page);
+        }
+
+        private int FileNumber()
+        {
+            var fileCounter = 0;
+            while (File.Exists(_rootDir + "\\page" + fileCounter + ".txt"))
+            {
+                fileCounter++;
+            }
+
+            return fileCounter;
+        }
+
+        private Page CreateNewChildPage(Page parent)
+        {
+            var fileCounter = FileNumber();
+            
+            var streamWriter = File.CreateText(_rootDir + "\\page" + fileCounter + ".txt");
+            streamWriter.Write($"{parent.PageIndex}##;\r\n");
+            streamWriter.Flush();
+            streamWriter.Close();
+            
+            return new PageService(_rootDir).LoadPage(fileCounter);
+        }
+        
         private void Compensation(Page overflownPage, Page sibling, Page parent, Record ancestorRecord, Record record, int ancestorPointer, int leftRight)
         {
             Console.WriteLine("Running Compensation");
@@ -209,12 +282,8 @@ namespace Projekt2.btreeService
             records.AddRange(overflownPage.Records);
             overflownPage.Records.Clear();
             records = records.OrderBy(r => r.Key).ToList();
-            
-            var fileCounter = 0;
-            while (File.Exists(_rootDir + "\\page" + fileCounter + ".txt"))
-            {
-                fileCounter++;
-            }
+
+            var fileCounter = FileNumber();
 
             var streamWriter = File.CreateText(_rootDir + "\\page" + fileCounter + ".txt");
             streamWriter.Write($"{parentPage.PageIndex}##;\r\n");
@@ -229,6 +298,7 @@ namespace Projekt2.btreeService
             middleRecord.LowerKeysPointer = overflownPage.PageIndex;
             
             parentPage.ChildrenIndexes.Add(newPage.PageIndex);
+            
             PutRecordParent(parentPage, middleRecord);
 
             DistributeRecordsBetweenPages(overflownPage, newPage, records);
@@ -304,16 +374,15 @@ namespace Projekt2.btreeService
         private void PutRecordParent(Page page, Record record)
         {
             var pageData = page.PageData.ToList();
-            var records = new List<Record>();
+            var records = new List<Record>{record};
             records.AddRange(page.Records);
             page.Records.Clear();
-            records.Add(record);
             records = records.OrderBy(r => r.Key).ToList();
-            var count = 0;
-            
+
             pageData.Clear();
             pageData.Add($"{page.ParentIndex}##;\r\n");
             pageData.Add($"{records[0].LowerKeysPointer}##;\r\n");
+            
             foreach (var r in records)
             {
                 AddRecordToPageData(pageData, r);

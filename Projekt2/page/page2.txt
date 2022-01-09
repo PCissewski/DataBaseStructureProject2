@@ -1,6 +1,4 @@
 0##;
 -1##;
-6#Marek Kubale|#-1;
-7#Wolfgang Amadeus Mozart|#-1;
-8#Jan Cox|#-1;
-9#Hans Kloss|#-1;
+18#Kacper Bartkowski|#-1;
+27#Debil|#-1;

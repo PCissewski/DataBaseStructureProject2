@@ -1,6 +1,4 @@
 0##;
 -1##;
-1#Pawel Cissewski|#-1;
-2#Jan Bach|#-1;
-3#Tomasz Dziubich|#-1;
-4#Kacper Wereszko|#-1;
+10#Karol Draszawka|#-1;
+13#Jan Daciuk|#-1;
