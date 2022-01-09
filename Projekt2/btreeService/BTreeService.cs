@@ -27,9 +27,9 @@ namespace Projekt2.btreeService
             _rootDir = rootDir;
         }
 
-        public void PrintTree(string root)
+        public void PrintTree()
         {
-            var pageService = new PageService(root);
+            var pageService = new PageService(_rootDir);
             var indexes = new List<int>{0};
 
             while (indexes.Count > 0)
@@ -97,8 +97,8 @@ namespace Projekt2.btreeService
 
         public void InsertRecord(Record record, string root)
         {
+            Console.WriteLine($"Inserting: {record}");
             var (searchedRecord, isLeaf, page, ancestorPointer) = SearchRecord(root, record.Key);
-            
             if (searchedRecord.Key != 0)
             {
                 Console.WriteLine("Already exist");
@@ -118,7 +118,7 @@ namespace Projekt2.btreeService
             // First, check if compensation is possible
             var ps = new PageService(root);
             var parentPage = ps.LoadPage(page.ParentIndex);
-            bool isRoot = page.PageIndex == parentPage.ParentIndex;
+            var isRoot = page.PageIndex == parentPage.ParentIndex;
             // Check whether left exists
             var isLeftSibling =  parentPage.ChildrenIndexes.Contains(ancestorPointer - 1); // for right ancestorPointer + 1
             // If exists check whether it is full, if it is compensation with this sibling is impossible
@@ -160,14 +160,9 @@ namespace Projekt2.btreeService
 
             if (page.ParentIndex == page.PageIndex)
             {
-                RootSplit(page, record);
-                // Create 2 pages
-                // Root jako index pliku zostaje ten sam
-                // tego roota dobrze ustawic
-                // a potem DistributeRecordsBetweenPages(newPage1, newPage2, rekordy)
-                // kontrolowac ChildIndexes !!!!
-                // wrzucic to potem do jakiejs metody RootSplit(page, record)
                 Console.WriteLine("Split Root");
+                RootSplit(page, record);
+                Console.WriteLine("Root has been split");
                 return;
             }
 
