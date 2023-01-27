@@ -8,6 +8,7 @@ namespace Projekt2.pageService
     public class PageService
     {
         private readonly string _rootDirectory;
+        private int _readCounter = 0;
 
         public PageService(string rootDirectory)
         {
@@ -16,11 +17,12 @@ namespace Projekt2.pageService
 
         public Page LoadPage(int index)
         {
+            _readCounter++;
             var pageData = GetPageData(index);
             
             var children = new List<int>();
             var records = new List<Record>();
-            var parent = 0;
+            var parent = pageData[0][0] -'0';
             var n = 0;
             foreach (var s in pageData)
             {
@@ -41,6 +43,13 @@ namespace Projekt2.pageService
                 }
                 
                 children.Add(int.Parse(data[2]));
+                if (children.Contains(-1))
+                {
+                    for (int i = 0; i < children.Count; i++)
+                    {
+                        children[i] = -1;
+                    }
+                }
                 records.Add(new Record
                     {
                         LowerKeysPointer = children[n],
