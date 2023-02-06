@@ -7,6 +7,16 @@ namespace Projekt2.pageService
 {
     public class PageService
     {
+
+        /*
+        Format strony:
+        
+        PointerRodzic##;
+        PointerDziecko##;p_0
+        Klucz#AdressToMainFile#PointerDziecko;
+        Klucz#AdressToMainFile#PointerDziecko;
+         */
+
         private readonly string _rootDirectory;
         private int _readCounter = 0;
 

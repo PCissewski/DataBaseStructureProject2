@@ -11,16 +11,10 @@ namespace Projekt2.btreeService
 {
     public class BTreeService
     {
-        /*
-        Format strony:
-        
-        PointerRodzic##;
-        PointerDziecko##;p_0
-        Klucz#ImieOsoby#PointerDziecko;
-        Klucz#ImieOsoby#PointerDziecko;
-         */
-
         private readonly string _rootDir;
+
+        private readonly string _mainFile =
+            @"X:\Studia\InformatykaSemestr5\SBD\Project2\Projekt2\Projekt2\page\mainFile.txt";
         private int _readCounter = 0;
         private int _writeCounter = 0;
         public BTreeService(string rootDir)
@@ -56,6 +50,13 @@ namespace Projekt2.btreeService
             }
         }
 
+        private string[] ReadMainFile()
+        {
+            return File.ReadAllText(_mainFile)
+                .Replace("\r\n", "")
+                .Split(';');
+        }
+
         public Tuple<Record, bool, Page, Record> SearchRecord(string root, int key)
         {
             var pageService = new PageService(root);
@@ -71,7 +72,7 @@ namespace Projekt2.btreeService
                 isLeaf = page.ChildrenIndexes.Contains(-1);
                 var begin = 0;
                 var last = page.Records.Count - 1;
-
+            
                 while (begin <= last)
                 {
                     var middle = (begin + last) / 2;
@@ -103,7 +104,7 @@ namespace Projekt2.btreeService
                         ancestorRecord.GreaterKeysPointer = page.ChildrenIndexes[i + 1];
                     }
                 }
-
+            
                 fileCount--;
             }
             Console.WriteLine("Not Found");

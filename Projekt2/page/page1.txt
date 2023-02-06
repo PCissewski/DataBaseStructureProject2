@@ -1,5 +1,5 @@
 0##;
-10##;
-285#Owen OCONNOR|#19;
-415#Seth VINCENT|#12;
-471#Tabatha MAYS|#4;
+-1##;
+81#Nolan GALLAGHER|#-1;
+98#Latonya WILLIAMS|#-1;
+108#Marc DAUGHERTY|#-1;
